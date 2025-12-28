@@ -7,6 +7,7 @@ class InvoiceReminderConfig(models.Model):
     _name = "invoice.reminder.config"
     _description = "Configuración de Días de Aviso de Factura por Partner"
 
+    name = fields.Char(string="Nombre", required=True)
     partner_id = fields.Many2one(
         "res.partner", string="Partner", required=True, ondelete="cascade"
     )
