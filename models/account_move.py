@@ -5,13 +5,14 @@ from datetime import timedelta
 
 
 class AccountMove(models.Model):
+    _inherit = "account.move"
+
     def cron_send_upcoming_reminders(self):
+        print("[DEBUG] Entrando a cron_send_upcoming_reminders")
         """
         Método para ejecutar diariamente por el cron y enviar recordatorios agrupados por partner.
         """
         self.send_upcoming_reminders_by_partner(dry_run=False)
-
-    _inherit = "account.move"
 
     # =========================
     # CRON: PRXIMAS A VENCER
@@ -29,6 +30,7 @@ class AccountMove(models.Model):
                 ("email", "!=", False),
             ]
         )
+        print(f"Partners encontrados: {len(partners)}")
 
         style_header = (
             "color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;"
@@ -38,7 +40,18 @@ class AccountMove(models.Model):
         style_td = "padding: 10px; border-bottom: 1px solid #eee; font-size: 13px;"
 
         for partner in partners:
-            days = partner.x_invoice_reminder_days or 5
+            # Buscar la configuración activa de días de aviso para el partner
+            config = partner.invoice_reminder_config_ids.filtered(lambda c: c.active)
+            if config:
+                days = config[:1].days
+                print(
+                    f"Partner: {partner.name} | Configuración activa encontrada: {days} días"
+                )
+            else:
+                days = 5
+                print(
+                    f"Partner: {partner.name} | Sin configuración activa, usando valor por defecto: 5 días"
+                )
             target_date = today + timedelta(days=days)
 
             invoices = self.search(
@@ -50,7 +63,7 @@ class AccountMove(models.Model):
                     ("invoice_date_due", "=", target_date),
                 ]
             )
-
+            print(f"Facturas encontradas para {partner.name}: {len(invoices)}")
             if not invoices:
                 continue
 
@@ -103,10 +116,19 @@ class AccountMove(models.Model):
                 )
                 continue
 
-            partner.message_post(
-                subject="Recordatorio: Facturas Próximas a Vencer",
-                body=body,
-                message_type="comment",
-                subtype_xmlid="mail.mt_comment",
-                partner_ids=[partner.id],
+            print(
+                f"Enviando mensaje a partner: {partner.name} | ID: {partner.id} | Email: {partner.email} | Facturas: {len(invoices)}"
             )
+            print(f"Subject: Recordatorio: Facturas Próximas a Vencer")
+            print(f"Body: {body[:200]}... (truncado)")
+            try:
+                partner.message_post(
+                    subject="Recordatorio: Facturas Próximas a Vencer",
+                    body=body,
+                    message_type="notification",
+                    subtype_xmlid="mail.mt_comment",
+                    partner_ids=[partner.id],
+                )
+                print("Mensaje enviado correctamente.")
+            except Exception as e:
+                print(f"Error al enviar mensaje: {e}")
