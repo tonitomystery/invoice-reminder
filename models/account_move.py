@@ -119,8 +119,6 @@ class AccountMove(models.Model):
             print(
                 f"Enviando mensaje a partner: {partner.name} | ID: {partner.id} | Email: {partner.email} | Facturas: {len(invoices)}"
             )
-            print(f"Subject: Recordatorio: Facturas Próximas a Vencer")
-            print(f"Body: {body[:200]}... (truncado)")
             try:
                 partner.message_post(
                     subject="Recordatorio: Facturas Próximas a Vencer",
@@ -128,6 +126,7 @@ class AccountMove(models.Model):
                     message_type="notification",
                     subtype_xmlid="mail.mt_comment",
                     partner_ids=[partner.id],
+                    notify=True,
                 )
                 print("Mensaje enviado correctamente.")
             except Exception as e:
