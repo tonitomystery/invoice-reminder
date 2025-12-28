@@ -5,6 +5,7 @@ from odoo import models, fields, api
 
 class ResPartner(models.Model):
     _inherit = "res.partner"
+    _name = "partner.reminder"
 
     # Por defecto en True para que todos reciban correos a menos que los desmarques
     x_recibe_reminder = fields.Boolean(
