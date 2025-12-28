@@ -6,6 +6,18 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='category_id']" position="after">
                 <field name="x_recibe_reminder"/>
+                <field name="invoice_reminder_config_ids" context="{'default_partner_id': active_id}">
+                    <tree editable="bottom">
+                        <field name="days"/>
+                        <field name="active"/>
+                    </tree>
+                    <form string="Configuración de Días de Aviso">
+                        <group>
+                            <field name="days"/>
+                            <field name="active"/>
+                        </group>
+                    </form>
+                </field>
             </xpath>
         </field>
     </record>
