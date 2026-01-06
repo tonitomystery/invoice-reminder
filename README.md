@@ -7,7 +7,7 @@ Este módulo de Odoo añade funcionalidades para la gestión automatizada de rec
 *   **Envío Automático:** Utiliza una acción planificada (Cron) para comprobar diariamente las facturas que requieren recordatorio.
 *   **Configuración por Defecto:** Envía recordatorios automáticos 5 días antes de la fecha de vencimiento para los contactos habilitados que no tengan una configuración específica.
 *   **Configuración Personalizada:** Permite definir reglas específicas de días de aviso para cada contacto a través del modelo `invoice.reminder.config`.
-*   **Activación por Contacto:** Campo booleano `x_recibe_reminder` en la ficha del contacto (`res.partner`) para habilitar o inhabilitar la recepción de recordatorios.
+*   **Activación por Contacto:** Campo booleano `x_receive_invoice_reminder` en la ficha del contacto (`res.partner`) para habilitar o inhabilitar la recepción de recordatorios.
 *   **Plantillas de Correo:** Utiliza plantillas de correo personalizables (`modulo_reminder.email_template_invoice_reminder`) para el envío de los avisos, incluyendo un resumen de las facturas pendientes.
 
 ## Configuración
@@ -16,7 +16,7 @@ Este módulo de Odoo añade funcionalidades para la gestión automatizada de rec
 Para que un cliente reciba recordatorios:
 1.  Vaya a **Contactos**.
 2.  Abra la ficha del cliente.
-3.  Marque la casilla **Recibe Reminder** (o el nombre técnico `x_recibe_reminder`).
+3.  Marque la casilla **Recibe Reminder** (o el nombre técnico `x_receive_invoice_reminder`).
 4.  Asegúrese de que el contacto tenga una dirección de correo electrónico válida.
 
 ### Definir Reglas Personalizadas

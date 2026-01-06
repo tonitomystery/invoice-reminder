@@ -23,7 +23,7 @@ class AccountMove(models.Model):
 
         for config in configs:
             partner = config.partner_id
-            if not partner or not partner.x_recibe_reminder or not partner.email:
+            if not partner or not partner.x_receive_invoice_reminder or not partner.email:
                 continue
             partners_config.add(partner.id)
             reminder_date  = today + timedelta(days=config.days * -1)
@@ -53,7 +53,7 @@ class AccountMove(models.Model):
         """
         partners = self.env["res.partner"].search(
             [
-                ("x_recibe_reminder", "=", True),
+                ("x_receive_invoice_reminder", "=", True),
                 ("email", "!=", False),
                 ("id", "not in", list(partners_config)),
             ]
