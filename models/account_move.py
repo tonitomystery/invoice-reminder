@@ -2,57 +2,31 @@
 
 from odoo import models, fields
 from datetime import timedelta
+ 
 
 
 class AccountMove(models.Model):
     _inherit = "account.move"
 
-    def cron_send_upcoming_reminders(self):
-        print("[DEBUG] Entrando a cron_send_upcoming_reminders")
-        """
-        Método para ejecutar diariamente por el cron y enviar recordatorios agrupados por partner.
-        """
-        self.send_upcoming_reminders_by_partner(dry_run=False)
-
-    # =========================
-    # CRON: PRXIMAS A VENCER
-    # =========================
     def send_upcoming_reminders_by_partner(self, dry_run=False):
         """
-        Agrupa facturas próximas a vencer por partner y envía recordatorio por el chatter.
+        Solo envía recordatorios a los partners que tienen una configuración activa en invoice.reminder.config.
+        Usa el campo days para calcular la fecha de aviso personalizada por partner.
         """
         self = self.with_user(1)
         today = fields.Date.today()
+ 
+        configs = self.env["invoice.reminder.config"].search([("active", "=", True)])
+        partners_config = set()
 
-        partners = self.env["res.partner"].search(
-            [
-                ("x_recibe_reminder", "=", True),
-                ("email", "!=", False),
-            ]
-        )
-        print(f"Partners encontrados: {len(partners)}")
+        template = self.env.ref("modulo_reminder.email_template_invoice_reminder", raise_if_not_found=False)
 
-        style_header = (
-            "color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;"
-        )
-        style_table = "width: 100%; border-collapse: collapse; margin-top: 20px; font-family: sans-serif;"
-        style_th = "background-color: #f8f9fa; padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6; font-size: 13px;"
-        style_td = "padding: 10px; border-bottom: 1px solid #eee; font-size: 13px;"
-
-        for partner in partners:
-            # Buscar la configuración activa de días de aviso para el partner
-            config = partner.invoice_reminder_config_ids.filtered(lambda c: c.active)
-            if config:
-                days = config[:1].days
-                print(
-                    f"Partner: {partner.name} | Configuración activa encontrada: {days} días"
-                )
-            else:
-                days = 5
-                print(
-                    f"Partner: {partner.name} | Sin configuración activa, usando valor por defecto: 5 días"
-                )
-            target_date = today + timedelta(days=days)
+        for config in configs:
+            partner = config.partner_id
+            if not partner or not partner.x_recibe_reminder or not partner.email:
+                continue
+            partners_config.add(partner.id)
+            reminder_date  = today + timedelta(days=config.days * -1)
 
             invoices = self.search(
                 [
@@ -60,74 +34,82 @@ class AccountMove(models.Model):
                     ("state", "=", "posted"),
                     ("payment_state", "in", ["not_paid", "partial"]),
                     ("partner_id", "=", partner.id),
-                    ("invoice_date_due", "=", target_date),
+                    ("invoice_date_due", "=", reminder_date),
                 ]
             )
-            print(f"Facturas encontradas para {partner.name}: {len(invoices)}")
             if not invoices:
                 continue
 
-            total_due = sum(invoices.mapped("amount_residual"))
-
-            rows = ""
-            for inv in invoices:
-                ncf = getattr(inv, "l10n_do_fiscal_number", None) or "N/A"
-                rows += f"""
-                        <tr>
-                            <td style=\"{style_td}\"><strong>{inv.name}</strong><br><small style=\"color: #7f8c8d;\">{ncf}</small></td>
-                            <td style=\"{style_td}; text-align: center;\">{inv.invoice_date_due}</td>
-                            <td style=\"{style_td}; text-align: right;\">{inv.amount_residual:,.2f}</td>
-                        </tr>
-                    """
-
-            body = f"""
-                <div style=\"font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: auto; border: 1px solid #f0f0f0; padding: 20px;\">
-                    <h2 style=\"{style_header}\">Aviso de Próximo Vencimiento</h2>
-                    <p>Estimado/a <strong>{partner.name}</strong>,</p>
-                    <p>Le escribimos para recordarle cordialmente que las siguientes facturas están próximas a vencer:</p>
-                    <table style=\"{style_table}\">
-                        <thead>
-                            <tr>
-                                <th style=\"{style_th}\">Documento / NCF</th>
-                                <th style=\"{style_th}; text-align: center;\">Vencimiento</th>
-                                <th style=\"{style_th}; text-align: right;\">Monto</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {rows}
-                        </tbody>
-                    </table>
-                    <div style=\"margin-top: 20px; text-align: right; font-size: 1.1em;\">
-                        <strong>Total a Pagar: <span style=\"color: #3498db;\">{total_due:,.2f}</span></strong>
-                    </div>
-                    <p style=\"margin-top: 30px; font-size: 0.9em; color: #555;\">
-                        Agradecemos de antemano su gestión de pago para evitar interrupciones en su servicio o cargos por mora.
-                    </p>
-                    <p style=\"margin-top: 40px; border-top: 1px solid #eee; padding-top: 10px; font-size: 0.85em; color: #95a5a6;\">
-                        Atentamente,<br>
-                        <strong>Departamento de Administración</strong>
-                    </p>
-                </div>
-                """
-
             if dry_run:
-                print(
-                    f" [DRY RUN] Se enviaría aviso preventivo a {partner.email} ({len(invoices)} facturas)."
-                )
                 continue
 
-            print(
-                f"Enviando mensaje a partner: {partner.name} | ID: {partner.id} | Email: {partner.email} | Facturas: {len(invoices)}"
+            self._send_reminder_with_template(template, partner, invoices)
+
+        self._send_default_reminders(today, partners_config, dry_run)
+
+    def _send_default_reminders(self, today, partners_config, dry_run):
+        """
+        Envía recordatorios a partners que no tienen configuración personalizada (5 días antes).
+        """
+        partners = self.env["res.partner"].search(
+            [
+                ("x_recibe_reminder", "=", True),
+                ("email", "!=", False),
+                ("id", "not in", list(partners_config)),
+            ]
+        )
+        template = self.env.ref("modulo_reminder.email_template_invoice_reminder", raise_if_not_found=False)
+
+        for partner in partners:
+            reminder_date = today + timedelta(days=5)
+            invoices = self.search(
+                [
+                    ("move_type", "=", "out_invoice"),
+                    ("state", "=", "posted"),
+                    ("payment_state", "in", ["not_paid", "partial"]),
+                    ("partner_id", "=", partner.id),
+                    ("invoice_date_due", "=", reminder_date),
+                ]
             )
-            try:
-                partner.message_post(
-                    subject="Recordatorio: Facturas Próximas a Vencer",
-                    body=body,
-                    message_type="notification",
-                    subtype_xmlid="mail.mt_comment",
-                    partner_ids=[partner.id],
-                    notify=True,
-                )
-                print("Mensaje enviado correctamente.")
-            except Exception as e:
-                print(f"Error al enviar mensaje: {e}")
+            if not invoices:
+                continue
+
+            if dry_run:
+                continue
+
+            self._send_reminder_with_template(template, partner, invoices)
+
+    def _send_reminder_with_template(self, template, partner, invoices):
+        """
+        Método auxiliar para enviar el recordatorio usando una plantilla de correo.
+        Permite pasar el contexto necesario para la tabla de facturas.
+        """
+        if not template:
+            _logger.error("ERROR: No se encontró la plantilla modulo_reminder.email_template_invoice_reminder")
+            return
+
+        total_due = sum(invoices.mapped("amount_residual"))
+        
+        ctx = {
+            "invoice_ids": invoices.ids,
+            "total_due": total_due,
+
+        }
+        
+    
+        main_invoice = invoices[0]
+        
+        try:
+            body_html = template.with_context(**ctx)._render_field('body_html', [main_invoice.id])[main_invoice.id]
+            subject = template.with_context(**ctx)._render_field('subject', [main_invoice.id])[main_invoice.id]
+            
+            new_msg = partner.message_post(
+                body=body_html,
+                subject=subject,
+                subtype_xmlid="mail.mt_comment",
+                message_type="comment",
+                partner_ids=[partner.id],
+                notify=True,
+            )
+        except Exception as e:
+            raise Exception(f"Error al enviar mensaje con plantilla: {e}")

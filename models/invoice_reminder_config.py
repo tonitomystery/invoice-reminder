@@ -13,3 +13,17 @@ class InvoiceReminderConfig(models.Model):
     )
     days = fields.Integer(string="Días de Aviso", default=5, required=True)
     active = fields.Boolean(string="Activo", default=True)
+    company_id = fields.Many2one(
+        "res.company",
+        string="Compañía",
+        required=True,
+        default=lambda self: self.env.company.id,
+    )
+
+    _sql_constraints = [
+        (
+            "unique_partner_days_company",
+            "unique(partner_id, days, company_id)",
+            "No se puede repetir la combinación de Partner, Días de Aviso y Compañía.",
+        ),
+    ]

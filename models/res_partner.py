@@ -8,7 +8,7 @@ class ResPartner(models.Model):
 
     # Por defecto en True para que todos reciban correos a menos que los desmarques
     x_recibe_reminder = fields.Boolean(
-        string="Recibir Recordatorios de Pago", default=True
+        string="Recibir Recordatorios de Pago", default=False
     )
 
     invoice_reminder_config_ids = fields.One2many(

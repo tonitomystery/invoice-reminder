@@ -2,8 +2,9 @@
     "name": "Filtro de Recordatorios de Cliente",
     "version": "1.0",
     "category": "Accounting",
-    "depends": ["base", "account", "contacts"],
+    "depends": ["base", "account", "contacts", "mail"],
     "data": [
+        "data/mail_template.xml",
         "data/ir_cron.xml",
         "security/ir.model.access.csv",
         "views/invoice_reminder_config_views.xml",

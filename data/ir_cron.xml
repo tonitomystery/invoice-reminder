@@ -4,7 +4,7 @@
         <field name="name">Invoice Reminder</field>
         <field name="model_id" ref="account.model_account_move" />
         <field name="state">code</field>
-        <field name="code">model.cron_send_upcoming_reminders()</field>
+        <field name="code">model.send_upcoming_reminders_by_partner()</field>
         <field name="interval_number">1</field>
         <field name="interval_type">days</field>
         <field name="numbercall">-1</field>
