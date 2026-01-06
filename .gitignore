@@ -148,7 +148,7 @@ $RECYCLE.BIN/
 # Odoo custom
 *.xlsx
 *.xls
-*.csv
+
 *.pdf
 *.docx
 *.doc
