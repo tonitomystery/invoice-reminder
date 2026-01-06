@@ -1,6 +1,6 @@
 {
-    "name": "Filtro de Recordatorios de Cliente",
-    "version": "1.0",
+    "name": "Customer Invoice Reminder",
+    "version": "16.0.1.0",
     "category": "Accounting",
     "depends": ["base", "account", "contacts", "mail"],
     "data": [
