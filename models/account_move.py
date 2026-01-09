@@ -68,11 +68,13 @@ class AccountMove(models.Model):
             ]
         )
         _logger.info("Found %s customers for default reminders (5 days before)", len(partners))
+        
         template = self.env.ref(
             "modulo_reminder.email_template_invoice_reminder", raise_if_not_found=False
         )
 
         for partner in partners:
+            _logger.info("Sending default reminder to partner %s", partner.name)
             reminder_date = today + timedelta(days=5)
             invoices = self.search(
                 [
