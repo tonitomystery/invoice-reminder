@@ -23,7 +23,7 @@ class AccountMove(models.Model):
         partners_config = set()
 
         template = self.env.ref(
-            "modulo_reminder.email_template_invoice_reminder", raise_if_not_found=False
+            "invoice-reminder.email_template_invoice_reminder", raise_if_not_found=False
         )
 
         for config in configs:
@@ -82,7 +82,7 @@ class AccountMove(models.Model):
         _logger.info("Found %s customers for default reminders (5 days before)", len(partners))
         
         template = self.env.ref(
-            "modulo_reminder.email_template_invoice_reminder", raise_if_not_found=False
+            "invoice-reminder.email_template_invoice_reminder", raise_if_not_found=False
         )
 
         for partner in partners:
@@ -110,7 +110,7 @@ class AccountMove(models.Model):
         Permite pasar el contexto necesario para la tabla de facturas.
         """
         if not template:
-            _logger.warning("Template 'modulo_reminder.email_template_invoice_reminder' not found. Cannot send reminder.")
+            _logger.warning("Template 'invoice-reminder.email_template_invoice_reminder' not found. Cannot send reminder.")
             return
 
         total_due = sum(invoices.mapped("amount_residual"))
