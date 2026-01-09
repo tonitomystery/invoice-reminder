@@ -76,7 +76,6 @@ class AccountMove(models.Model):
         )
 
         for partner in partners:
-            _logger.info("Sending default reminder to partner %s", partner.name)
             reminder_date = today + timedelta(days=5)
             invoices = self.search(
                 [
@@ -112,6 +111,8 @@ class AccountMove(models.Model):
 
         main_invoice = invoices[0]
 
+        _logger.info("Sending reminder to partner %s", partner.name)
+
         try:
             body_html = template.with_context(**ctx)._render_field(
                 "body_html", [main_invoice.id]
@@ -128,6 +129,7 @@ class AccountMove(models.Model):
                 partner_ids=[partner.id],
                 notify=True,
             )
+            _logger.info("Reminder sent to partner %s", partner.name)
         except Exception as e:
             _logger.error("Error sending reminder to partner %s: %s", partner.name, e)
             raise Exception(f"Error al enviar mensaje con plantilla: {e}")
