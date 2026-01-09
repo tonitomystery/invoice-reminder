@@ -2,7 +2,6 @@
 
 from odoo import models, fields
 from datetime import timedelta
- 
 
 
 class AccountMove(models.Model):
@@ -15,18 +14,24 @@ class AccountMove(models.Model):
         """
         self = self.with_user(1)
         today = fields.Date.today()
- 
+
         configs = self.env["invoice.reminder.config"].search([("active", "=", True)])
         partners_config = set()
 
-        template = self.env.ref("modulo_reminder.email_template_invoice_reminder", raise_if_not_found=False)
+        template = self.env.ref(
+            "modulo_reminder.email_template_invoice_reminder", raise_if_not_found=False
+        )
 
         for config in configs:
             partner = config.partner_id
-            if not partner or not partner.x_receive_invoice_reminder or not partner.email:
+            if (
+                not partner
+                or not partner.x_receive_invoice_reminder
+                or not partner.email
+            ):
                 continue
             partners_config.add(partner.id)
-            reminder_date  = today + timedelta(days=config.days * -1)
+            reminder_date = today + timedelta(days=config.days * -1)
 
             invoices = self.search(
                 [
@@ -58,7 +63,9 @@ class AccountMove(models.Model):
                 ("id", "not in", list(partners_config)),
             ]
         )
-        template = self.env.ref("modulo_reminder.email_template_invoice_reminder", raise_if_not_found=False)
+        template = self.env.ref(
+            "modulo_reminder.email_template_invoice_reminder", raise_if_not_found=False
+        )
 
         for partner in partners:
             reminder_date = today + timedelta(days=5)
@@ -85,24 +92,25 @@ class AccountMove(models.Model):
         Permite pasar el contexto necesario para la tabla de facturas.
         """
         if not template:
-            _logger.error("ERROR: No se encontró la plantilla modulo_reminder.email_template_invoice_reminder")
             return
 
         total_due = sum(invoices.mapped("amount_residual"))
-        
+
         ctx = {
             "invoice_ids": invoices.ids,
             "total_due": total_due,
-
         }
-        
-    
+
         main_invoice = invoices[0]
-        
+
         try:
-            body_html = template.with_context(**ctx)._render_field('body_html', [main_invoice.id])[main_invoice.id]
-            subject = template.with_context(**ctx)._render_field('subject', [main_invoice.id])[main_invoice.id]
-            
+            body_html = template.with_context(**ctx)._render_field(
+                "body_html", [main_invoice.id]
+            )[main_invoice.id]
+            subject = template.with_context(**ctx)._render_field(
+                "subject", [main_invoice.id]
+            )[main_invoice.id]
+
             new_msg = partner.message_post(
                 body=body_html,
                 subject=subject,
