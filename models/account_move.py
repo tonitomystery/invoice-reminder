@@ -100,6 +100,7 @@ class AccountMove(models.Model):
         Permite pasar el contexto necesario para la tabla de facturas.
         """
         if not template:
+            _logger.warning("Template 'modulo_reminder.email_template_invoice_reminder' not found. Cannot send reminder.")
             return
 
         total_due = sum(invoices.mapped("amount_residual"))
