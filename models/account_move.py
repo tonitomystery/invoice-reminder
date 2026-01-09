@@ -27,6 +27,7 @@ class AccountMove(models.Model):
         )
 
         for config in configs:
+            _logger.info("Processing config: %s", config)
             partner = config.partner_id
             if (
                 not partner
