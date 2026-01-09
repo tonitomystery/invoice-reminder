@@ -37,6 +37,8 @@ class AccountMove(models.Model):
             partners_config.add(partner.id)
             reminder_date = today + timedelta(days=config.days * -1)
 
+            _logger.info("reminder_date %s", reminder_date)
+
             invoices = self.search(
                 [
                     ("move_type", "=", "out_invoice"),
