@@ -36,7 +36,7 @@ class AccountMove(models.Model):
             ):
                 continue
             partners_config.add(partner.id)
-            reminder_date = today + timedelta(days=config.days * -1)
+            reminder_date = today + timedelta(days=config.days)
 
             _logger.info("reminder_date %s", reminder_date)
 
@@ -63,6 +63,15 @@ class AccountMove(models.Model):
         """
         Envía recordatorios a partners que no tienen configuración personalizada (5 días antes).
         """
+        # Debugging: Check why 0 customers are found
+        all_partners_count = self.env["res.partner"].search_count([])
+        reminder_partners_count = self.env["res.partner"].search_count([("x_receive_invoice_reminder", "=", True)])
+        email_partners_count = self.env["res.partner"].search_count([("x_receive_invoice_reminder", "=", True), ("email", "!=", False)])
+        
+        _logger.info("DEBUG: Total Partners: %s", all_partners_count)
+        _logger.info("DEBUG: Partners with x_receive_invoice_reminder=True: %s", reminder_partners_count)
+        _logger.info("DEBUG: Partners with Reminder=True AND Email defined: %s", email_partners_count)
+
         partners = self.env["res.partner"].search(
             [
                 ("x_receive_invoice_reminder", "=", True),
