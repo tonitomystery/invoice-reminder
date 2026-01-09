@@ -2,6 +2,9 @@
 
 from odoo import models, fields
 from datetime import timedelta
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class AccountMove(models.Model):
@@ -14,6 +17,7 @@ class AccountMove(models.Model):
         """
         self = self.with_user(1)
         today = fields.Date.today()
+        _logger.info("Starting send_upcoming_reminders_by_partner for date: %s", today)
 
         configs = self.env["invoice.reminder.config"].search([("active", "=", True)])
         partners_config = set()
@@ -63,6 +67,7 @@ class AccountMove(models.Model):
                 ("id", "not in", list(partners_config)),
             ]
         )
+        _logger.info("Found %s customers for default reminders (5 days before)", len(partners))
         template = self.env.ref(
             "modulo_reminder.email_template_invoice_reminder", raise_if_not_found=False
         )
@@ -120,4 +125,5 @@ class AccountMove(models.Model):
                 notify=True,
             )
         except Exception as e:
+            _logger.error("Error sending reminder to partner %s: %s", partner.name, e)
             raise Exception(f"Error al enviar mensaje con plantilla: {e}")
